@@ -1,4 +1,4 @@
-package com.example.mc_progetto_kotlin
+package com.example.mc_progetto_kotlin.view
 
 
 import androidx.compose.foundation.layout.*
@@ -27,6 +27,7 @@ fun ProfileScreen(onNavigateToMenuList: () -> Unit) {
     ) {
         Text("Profilo Utente", style = MaterialTheme.typography.headlineSmall)
 
+        //outlinedTextField permette di visualizzare e inserire campi di testo
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },

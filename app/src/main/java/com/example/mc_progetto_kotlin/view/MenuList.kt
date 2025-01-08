@@ -1,4 +1,4 @@
-package com.example.mc_progetto_kotlin
+package com.example.mc_progetto_kotlin.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,7 +13,8 @@ import androidx.compose.ui.unit.dp
 
 
 @Composable
-fun MenuListScreen(onMenuSelected: (String) -> Unit) {
+fun MenuListScreen(onMenuSelected: (String) -> Unit) { //la funzione arriva dal Navigation, quando si seleziona un menù,
+                                                        // questa viene chiamata ed esegue quella dichiarata nel navigator
     val menuList = listOf(
         MenuItem("Pizza Margherita", "Un classico italiano", 8.50, "15-20 min"),
         MenuItem("Pasta al Pesto", "Deliziosa pasta fresca", 10.00, "20-25 min"),

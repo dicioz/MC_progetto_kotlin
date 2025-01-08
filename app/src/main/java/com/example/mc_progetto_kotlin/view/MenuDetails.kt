@@ -1,4 +1,4 @@
-package com.example.mc_progetto_kotlin
+package com.example.mc_progetto_kotlin.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button

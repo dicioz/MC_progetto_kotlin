@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,25 +13,28 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavController
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.foundation.layout.*
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.BottomNavigationItem
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import com.example.mc_progetto_kotlin.view.DeliveryStatusScreen
+import com.example.mc_progetto_kotlin.view.MenuDetailsScreen
+import com.example.mc_progetto_kotlin.view.MenuListScreen
+import com.example.mc_progetto_kotlin.view.ProfileScreen
 
 @Composable
 fun MainAppNavHost() {
     val navController = rememberNavController()
 
+    //Scaffold è un layout e mostra un contenuto principale e un contenuto inferiore
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
+            //BottomNavigation è un layout che fornisce una barra di navigazione inferiore per un'applicazione
             BottomNavigation {
+                //BottomNavigationItem è un elemento di navigazione inferiore che rappresenta una destinazione in un'applicazione
                 BottomNavigationItem(
                     icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Menu List") },
                     label = { Text("Menu") },
@@ -53,24 +55,28 @@ fun MainAppNavHost() {
                 )
             }
         }
-    ) { innerPadding ->  // Applica innerPadding qui
+        //innerPadding è un valore di padding che viene applicato al contenuto principale
+    ) { innerPadding ->
+        //navhost serve a navigare tra le schermate dell'applicazione
         NavHost(
             navController = navController,
-            startDestination = "menuList",
+            startDestination = "menuList", // Schermata iniziale
             modifier = Modifier.padding(innerPadding) // Aggiungi innerPadding al NavHost
         ) {
             composable("profile") {
-                ProfileScreen { navController.navigate("menuList") }
+                ProfileScreen { navController.navigate("menuList") } //da mettere a posto
             }
             composable("menuList") {
                 MenuListScreen { menuName ->
+                    //definisce una funzione che naviga alla schermata MenuDetails, queeta viene passata a MenuListScreen
+                    // e viene chiamata quando si seleziona un menù
                     navController.navigate("menuDetails/$menuName")
                 }
             }
-            composable("menuDetails/{menuName}") { backStackEntry ->
+            composable("menuDetails/{menuName}") { backStackEntry -> //backStackEntry recupera il valore passato come menuName da menuList
                 val menuName = backStackEntry.arguments?.getString("menuName") ?: ""
                 MenuDetailsScreen(menuName) {
-                    navController.navigate("deliveryStatus")
+
                 }
             }
             composable("deliveryStatus") {
