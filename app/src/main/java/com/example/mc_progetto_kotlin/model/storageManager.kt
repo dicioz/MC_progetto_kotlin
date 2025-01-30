@@ -45,22 +45,22 @@ interface UserDao {
     suspend fun getAllUsers(): List<User>
 }
 
-fun checkUser() {
-    // controlla se l'utente è già presente nel database, altrimenti lo crea e lo salva
-    val userDao = MyApplication().db.userDao()
-    CoroutineScope(Dispatchers.Main).launch {
-        val checkSid = userDao.getAllUsers()
-        if (checkSid.isEmpty()) {
-            CommunicationController.createUser()
-            userDao.insertUser(User(CommunicationController.sid))
-        } else {
-            Log.d("User", CommunicationController.sid.toString())
-        }
-    }
+//fun checkUser() {
+//    // controlla se l'utente è già presente nel database, altrimenti lo crea e lo salva
+//    val userDao = MyApplication().db.userDao()
+//    CoroutineScope(Dispatchers.Main).launch {
+//        val checkSid = userDao.getAllUsers()
+//        if (checkSid.isEmpty()) {
+//            CommunicationController.createUser()
+//            userDao.insertUser(User(CommunicationController.sid))
+//        } else {
+//            Log.d("User", CommunicationController.sid.toString())
+//        }
+//    }
 //        val user = User(CommunicationController.sid)
 //        CoroutineScope(Dispatchers.Main).launch {
 //            userDao.insertUser(user)
 //        }
-}
+//}
 
 

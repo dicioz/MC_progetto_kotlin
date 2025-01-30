@@ -1,8 +1,15 @@
 package com.example.mc_progetto_kotlin.model
 
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.example.mc_progetto_kotlin.utils.dataStore
 //import com.example.ktorexample.UserResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -20,6 +27,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+
 
 
 object CommunicationController {
@@ -87,6 +95,7 @@ object CommunicationController {
             val result: UserResponse = httpResponse.body()
             sid = result.sid
             Log.d(TAG, "createUser result: $sid")
+            //saveSid(context, sid)
             return result
         } catch (e: Exception) {
             Log.e(TAG, "createUser error: ${e.message}")
@@ -94,6 +103,13 @@ object CommunicationController {
         }
 
 
+    }
+
+    private suspend fun saveSid(context: Context, sid: String) {
+        val sidKey = stringPreferencesKey("sid")
+        context.dataStore.edit { pref ->
+            pref[sidKey] = sid
+        }
     }
 
     @Serializable
