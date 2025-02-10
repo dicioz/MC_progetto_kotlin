@@ -3,6 +3,7 @@ package com.example.mc_progetto_kotlin.model
 
 import android.content.Context
 import android.net.Uri
+import android.os.storage.StorageManager
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -33,6 +34,7 @@ import kotlinx.serialization.json.Json
 object CommunicationController {
     private val BASE_URL = "https://develop.ewlab.di.unimi.it/mc/2425"
     var sid : String = ""
+    var uid: Int = 0
     private val TAG = CommunicationController::class.simpleName
 
     //crea un client http
@@ -49,6 +51,11 @@ object CommunicationController {
         POST,
         DELETE,
         PUT
+    }
+
+    lateinit var appContext: Context
+    fun init(context: Context) {
+        appContext = context.applicationContext
     }
 
     //funzione generica per effettuare una richiesta http
@@ -85,7 +92,7 @@ object CommunicationController {
     }
 
     suspend fun createUser(): UserResponse {
-
+        val dS: DataStoreManager = DataStoreManager
         Log.d(TAG, "createUser")
         val url = "$BASE_URL/user"
 
@@ -94,7 +101,12 @@ object CommunicationController {
             val httpResponse = genericRequest(url, HttpMethod.POST)
             val result: UserResponse = httpResponse.body()
             sid = result.sid
+            uid = result.uid
+
+            DataStoreManager.saveSid(sid)
+            DataStoreManager.saveUid(uid)
             Log.d(TAG, "createUser result: $sid")
+            Log.d(TAG, "createUser result: $uid")
             //saveSid(context, sid)
             return result
         } catch (e: Exception) {
@@ -105,12 +117,6 @@ object CommunicationController {
 
     }
 
-    private suspend fun saveSid(context: Context, sid: String) {
-        val sidKey = stringPreferencesKey("sid")
-        context.dataStore.edit { pref ->
-            pref[sidKey] = sid
-        }
-    }
 
     @Serializable
     data class UserResponse(val sid: String, val uid: Int)

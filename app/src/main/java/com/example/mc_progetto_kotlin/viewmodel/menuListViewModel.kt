@@ -1,23 +1,21 @@
 package com.example.mc_progetto_kotlin.viewmodel
 
+import android.content.Context
 import android.util.Log
-import android.view.Menu
-import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mc_progetto_kotlin.model.CommunicationController
+import com.example.mapboxexample.UserLocation
+import com.example.mc_progetto_kotlin.model.DataStoreManager
+import com.example.mc_progetto_kotlin.repository.getCurrentLocation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.example.mc_progetto_kotlin.model.CommunicationController
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.Serial
-import com.example.mc_progetto_kotlin.model.LocationPermissionHandler
 
 @Serializable
 data class MenuItem(
@@ -26,24 +24,13 @@ data class MenuItem(
     val price: Double,
     val location: Location,
     val imageVersion: Int,
+    @SerialName("default image") var image: String? = null,
+    @SerialName("longDescription") val longDescription: String? = null,
     val shortDescription: String,
-    val deliveryTime: Int,
-    var image: String? = null
-)
-
-@Serializable
-data class Location(
-    val lat: Double,
-    val lng: Double // Corretto il nome da "lgn" a "lng"
-)
-
-@Serializable
-data class Image(
-    val base64: String
+    val deliveryTime: Int
 )
 
 
-//[
 //{
 //    "mid": 0,
 //    "name": "Pizza Margherita",
@@ -54,92 +41,77 @@ data class Image(
 //},
 //    "imageVersion": 0,
 //    "shortDescription": "Pizza con pomodoro, mozzarella e basilico.",
-//    "deliveryTime": 30
+//    "deliveryTime": 30,
+//    "longDescription": "Pizza con pomodoro, mozzarella e basilico, cotta in forno a legna."
 //}
-//]
+
+@Serializable
+data class Location(
+    val lat: Double,
+    val lng: Double
+)
+
+@Serializable
+data class Image(
+    val base64: String
+)
 
 class MenuListViewModel : ViewModel() {
-    // Stato per la lista di menu
     private val _menuList = MutableStateFlow<List<MenuItem>>(emptyList())
     val menuList: StateFlow<List<MenuItem>> = _menuList
-
-    // Stato per l'errore
-    private val _error = MutableStateFlow<String?>(null)
-    //val error: StateFlow<String?> = _error
-
-    // Recupera i menu dal server
-    fun loadMenus() {
+    var sid: String = ""
+    fun loadMenus(context: Context) {
         viewModelScope.launch {
+            // Ottieni la posizione corrente
+            val userLocation: UserLocation? = getCurrentLocation(context)
+            if (userLocation == null) {
+                Log.e("MenuListViewModel", "Impossibile ottenere la posizione")
+                return@launch
+            }
+            sid = DataStoreManager.getSid() ?: ""
+            if (sid == "") {
+                Log.e("MenuListViewModel", "Sid non presente")
+                return@launch
+            }
+            Log.d("MenuListViewModel", "Using SID: $sid")
             try {
                 val url = "https://develop.ewlab.di.unimi.it/mc/2425/menu"
                 val httpMethod = CommunicationController.HttpMethod.GET
-                val lat = 45.4789
-                val lng = 9.19
-
-                // Crea l'utente prima di inviare la richiesta
-                CommunicationController.createUser()
-                val sid = CommunicationController.sid
-                val queryParameters = mapOf("lat" to lat, "lng" to lng, "sid" to sid)
-
-                // Effettua la richiesta per ottenere i menu
-                val response: HttpResponse =
-                    CommunicationController.genericRequest(url, httpMethod, queryParameters, null)
-
+                val queryParameters = mapOf(
+                    "lat" to userLocation.latitude,
+                    "lng" to userLocation.longitude,
+                    "sid" to sid
+                )
+                val response: HttpResponse = CommunicationController.genericRequest(url, httpMethod, queryParameters, null)
                 if (response.status == HttpStatusCode.OK) {
-                    try {
-                        Log.d("MenuListViewModel", "inizio deserializzazione")
-                        val result: List<MenuItem> = response.body()
-                        Log.d("MenuListViewModel", "Menu list response: $result")
-
-                        // Aggiorna la lista dei menu
-                        _menuList.value = result
-
-                        // Carica le immagini per ogni menu
-                        result.forEach { menuItem ->
-                            getMenuImage(menuItem.mid) { image ->
-                                // Ogni volta che una nuova immagine è caricata, aggiorna l'immagine nella lista
-                                val updatedItem =
-                                    menuItem.copy(image = image.base64) //copy crea una copia dell'oggetto
-                                _menuList.value = _menuList.value.map {
-                                    if (it.mid == updatedItem.mid) updatedItem else it
-                                }
+                    val result: List<MenuItem> = response.body()
+                    _menuList.value = result
+                    result.forEach { menuItem ->
+                        getMenuImage(sid, menuItem.mid) { image ->
+                            val updatedItem = menuItem.copy(image = image.base64)
+                            _menuList.value = _menuList.value.map {
+                                if (it.mid == updatedItem.mid) updatedItem else it
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e("MenuListViewModel", "Error deserializing JSON: ${e.message}")
-                        _error.value = "Errore nel parsing dei dati"
                     }
                 } else {
-                    _error.value = "Errore nel caricamento del menu: ${response.status.description}"
+                    Log.e("MenuListViewModel", "Errore nel caricamento dei menu: ${response.status.description}")
                 }
             } catch (e: Exception) {
-                _error.value = "Errore di rete: ${e.message}"
                 Log.e("MenuListViewModel", "Network error: ${e.message}")
             }
         }
     }
 
-    // Funzione per ottenere l'immagine del menu
-    private fun getMenuImage(menuId: Int, onImageLoaded: (Image) -> Unit) {
+    private suspend fun getMenuImage(sid: String, menuId: Int, onImageLoaded: (Image) -> Unit) {
         viewModelScope.launch {
             try {
-                val sid = CommunicationController.sid
                 val url = "https://develop.ewlab.di.unimi.it/mc/2425/menu/$menuId/image"
                 val httpMethod = CommunicationController.HttpMethod.GET
-                Log.d("MenuListViewModel", "Fetching image for menu id $menuId")
-
-                val response = CommunicationController.genericRequest(
-                    url,
-                    httpMethod,
-                    mapOf("sid" to sid),
-                    null
-                )
-                Log.d("MenuListViewModel", "Image fetch response status: ${response.status}")
-
+                val response = CommunicationController.genericRequest(url, httpMethod, mapOf("sid" to sid), null)
                 if (response.status == HttpStatusCode.OK) {
-                    Log.d("MenuListViewModel", "Assigned image to menu id $menuId")
                     val image: Image = response.body()
-                    onImageLoaded(image) // Passa l'immagine alla callback
+                    onImageLoaded(image)
                 } else {
                     throw Exception("Error fetching image: ${response.status.description}")
                 }
@@ -148,6 +120,4 @@ class MenuListViewModel : ViewModel() {
             }
         }
     }
-
-
 }

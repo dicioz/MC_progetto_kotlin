@@ -10,6 +10,16 @@ plugins {
 android {
     namespace = "com.example.mc_progetto_kotlin"
     compileSdk = 35
+    defaultConfig {
+        minSdk = 21
+    }
+    buildFeatures {
+        compose = true
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+        //freeCompilerArgs += "-Pandroidx.compose.compiler.reportPerformance=true"
+    }
 
     defaultConfig {
         applicationId = "com.example.mc_progetto_kotlin"
@@ -20,6 +30,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
@@ -115,6 +126,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences.rxjava3)
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
-
+    implementation ("androidx.compose.runtime:runtime-livedata:1.0.0")
+    implementation("com.mapbox.maps:android:11.9.2")
+    implementation("com.mapbox.extension:maps-compose:11.9.2")
 
 }

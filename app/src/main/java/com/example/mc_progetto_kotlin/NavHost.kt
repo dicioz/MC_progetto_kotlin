@@ -1,5 +1,6 @@
 package com.example.mc_progetto_kotlin
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 //import androidx.compose.material3.BottomNavigation
@@ -19,10 +20,13 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.navigation.NavController
 import com.example.mc_progetto_kotlin.view.DeliveryStatusScreen
 import com.example.mc_progetto_kotlin.view.MenuDetailsScreen
 import com.example.mc_progetto_kotlin.view.MenuListScreen
 import com.example.mc_progetto_kotlin.view.ProfileScreen
+
+
 
 @Composable
 fun MainAppNavHost() {
@@ -64,20 +68,21 @@ fun MainAppNavHost() {
             modifier = Modifier.padding(innerPadding) // Aggiungi innerPadding al NavHost
         ) {
             composable("profile") {
-                ProfileScreen { navController.navigate("menuList") } //da mettere a posto
+                ProfileScreen (navController = navController) //da mettere a posto
             }
             composable("menuList") {
-                MenuListScreen { menuName ->
+                MenuListScreen { mid ->
                     //definisce una funzione che naviga alla schermata MenuDetails, queeta viene passata a MenuListScreen
                     // e viene chiamata quando si seleziona un menù
-                    navController.navigate("menuDetails/$menuName")
+                    navController.navigate("menuDetails/${mid}")
                 }
             }
-            composable("menuDetails/{menuName}") { backStackEntry -> //backStackEntry recupera il valore passato come menuName da menuList
-                val menuName = backStackEntry.arguments?.getString("menuName") ?: ""
-                MenuDetailsScreen(menuName) {
-
-                }
+            composable("menuDetails/{mid}") { backStackEntry ->
+                val mid = backStackEntry.arguments?.getString("mid")?.toIntOrNull() ?: -1
+                MenuDetailsScreen(mid, onPurchase = { selectedMenuId ->
+                    // Qui puoi gestire l'acquisto, ad esempio navigare alla schermata dell'ordine
+                    Log.d("MainAppNavHost", "Acquistato menu con ID: $selectedMenuId")
+                }, navController = navController) // Passiamo anche il navController
             }
             composable("deliveryStatus") {
                 DeliveryStatusScreen()
