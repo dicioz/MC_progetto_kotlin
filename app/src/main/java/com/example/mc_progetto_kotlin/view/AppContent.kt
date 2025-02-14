@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -21,15 +22,6 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.example.mc_progetto_kotlin.MainAppNavHost
-import android.util.Log
-
-// Funzione per verificare il permesso
-fun checkLocationPermission(context: Context): Boolean {
-    return ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
-}
 
 @SuppressLint("MissingPermission")
 fun fetchLocation(
@@ -54,31 +46,28 @@ fun fetchLocation(
 }
 
 @Composable
-fun AppContent() {
+fun AppContent(startDestination: String) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    var permissionGranted by remember { mutableStateOf(checkLocationPermission(context)) }
+    var permissionGranted by remember { mutableStateOf(
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    ) }
     var userLocation by remember { mutableStateOf<UserLocation?>(null) }
     var loading by remember { mutableStateOf(true) }
 
-    // Launcher per richiedere il permesso di posizione
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         permissionGranted = isGranted
         if (isGranted) {
-            loading = true // Quando il permesso viene accettato, avviamo il caricamento
+            loading = true
         }
     }
 
-    // Se il permesso non è ancora concesso, lanciamolo
     LaunchedEffect(Unit) {
         if (!permissionGranted) {
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
-    // Se il permesso è concesso, prova ad ottenere la posizione
     LaunchedEffect(permissionGranted) {
         if (permissionGranted) {
             fetchLocation(fusedLocationClient, context) { location ->
@@ -90,7 +79,6 @@ fun AppContent() {
         }
     }
 
-    // UI condizionale aggiornata
     when {
         loading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -103,14 +91,13 @@ fun AppContent() {
             }
         }
         userLocation == null -> {
-            // Se non riusciamo a ottenere la posizione dopo che i permessi sono stati accettati, manteniamo il loading
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator() // Mantieni il caricamento fino alla posizione
+                Text("Impossibile ottenere la posizione.")
             }
         }
         else -> {
-            // Quando la posizione è disponibile, avviamo la navigazione principale.
-            MainAppNavHost()
+            // Una volta che la posizione è disponibile, avvia il NavHost
+            MainAppNavHost(startDestination)
         }
     }
 }

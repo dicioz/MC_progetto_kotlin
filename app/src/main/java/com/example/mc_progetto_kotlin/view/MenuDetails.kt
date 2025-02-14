@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.mc_progetto_kotlin.model.DataStoreManager
 import com.example.mc_progetto_kotlin.viewmodel.MenuDetailsViewModel
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -33,7 +34,12 @@ fun MenuDetailsScreen(menuId: Int, onPurchase: (Int) -> Unit, navController: Nav
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf("") } // Messaggio dinamico
 
+
     val menu by menuDetailsViewModel.menu.observeAsState()
+    if(dialogMessage == "Acquisto effettuato con successo"){
+        Log.d("MenuDetailsScreen", "Nome menu salvato correttamente")
+        menu?.name?.let { DataStoreManager.saveMenuName(it) }
+    }
 
     val imageBitmap = menu?.image?.let { base64String ->
         try {

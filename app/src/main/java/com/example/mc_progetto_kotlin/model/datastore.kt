@@ -18,6 +18,8 @@ object DataStoreManager {
     private val SID = stringPreferencesKey("sid")
     private val UID = intPreferencesKey("uid")
     private val OID = intPreferencesKey("oid")
+    private val menuName = stringPreferencesKey("menuName")
+    private val lasPage = stringPreferencesKey("lastPage")
 
     // Funzione per salvare il conteggio
     fun saveSid(sid: String) {
@@ -67,6 +69,39 @@ object DataStoreManager {
     suspend fun getOid(): Int{
         return CommunicationController.appContext.dataStore.data.map { preferences ->
             preferences[OID] ?: 0
+        }.first()
+    }
+
+    //funzione per salvare il nome del menu
+    fun saveMenuName(name: String){
+        CoroutineScope(Dispatchers.IO).launch {
+            CommunicationController.appContext.dataStore.edit { preferences ->
+                preferences[menuName] = name
+            }
+        }
+        Log.d("DataStoreManager", "nome del menu salvato correttamente: $name")
+    }
+
+    //funzione per ottenere il nome del menu
+    suspend fun getMenuName(): String?{
+        return CommunicationController.appContext.dataStore.data.map { preferences ->
+            preferences[menuName]
+        }.first()
+    }
+
+    //funzione per salvare l'ultima pagina visitata
+    fun saveLastPage(page: String){
+        CoroutineScope(Dispatchers.IO).launch {
+            CommunicationController.appContext.dataStore.edit { preferences ->
+                preferences[lasPage] = page
+            }
+        }
+    }
+
+    //funzione per ottenere l'ultima pagina visitata
+    suspend fun getLastPage(): String?{
+        return CommunicationController.appContext.dataStore.data.map { preferences ->
+            preferences[lasPage]
         }.first()
     }
 }

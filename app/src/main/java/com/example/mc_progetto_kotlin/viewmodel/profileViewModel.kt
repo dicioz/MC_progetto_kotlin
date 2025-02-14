@@ -5,6 +5,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mc_progetto_kotlin.model.CommunicationController
 import com.example.mc_progetto_kotlin.model.DataStoreManager
 import io.ktor.client.call.body
@@ -60,8 +61,15 @@ class ProfileViewModel: ViewModel() {
     private val _profile: MutableStateFlow<ProfileGET> = MutableStateFlow(ProfileGET("", "", "", "", 0, 0, "", 0, null, null))
     val profile = _profile.asStateFlow() // Esponi il profilo come StateFlow, ossia in sola lettura
 
+
+
     fun saveNewDatas(newProfile: Profile, onSuccess: (Boolean) -> Unit) {
         Log.d("ProfileViewModel", "sid: ${newProfile.sid}")
+        if(newProfile.cardNumber.length != 16 || newProfile.cardCVV.length != 3){
+            Log.d("ProfileViewModel", "Errore di validazione")
+            onSuccess(false)
+            return
+        }
         viewModelScope.launch {
             try {
                 uid = DataStoreManager.getUid()
@@ -115,4 +123,7 @@ class ProfileViewModel: ViewModel() {
             }
         }
     }
+
+
+
 }

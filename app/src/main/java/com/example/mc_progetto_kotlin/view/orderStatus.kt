@@ -40,6 +40,10 @@ import com.mapbox.maps.extension.style.layers.getLayer
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.getSource
 import com.mapbox.maps.extension.style.sources.getSourceAs
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
@@ -48,8 +52,9 @@ fun DeliveryStatusScreen() {
 
     // Ottieni il ViewModel e osserva gli state flow
     val orderStatusViewModel: OrderStatusViewModel = viewModel()
-    val orderStatus by orderStatusViewModel.orderStatus.collectAsState()
+    val orderStatus by orderStatusViewModel.orderStatus.collectAsState() // stato dell'ordine
     val menuName by orderStatusViewModel.menuName.collectAsState()
+    val startingLocation by orderStatusViewModel.menuStartingLocation.collectAsState() // da dove parte il menu
 
     // Stato per la posizione dell'utente
     val userLocationState = remember { mutableStateOf<UserLocation?>(null) }
@@ -78,9 +83,8 @@ fun DeliveryStatusScreen() {
 
     // Aggiorna il nome del menu una sola volta (se non è ancora stato impostato)
     LaunchedEffect(orderStatus) {
-        val loc = getCurrentLocation(context)
-        if (loc != null && (menuName == null || menuName!!.isEmpty())) {
-            orderStatusViewModel.getMenuName(loc.latitude, loc.longitude)
+        if (userLocationState.value != null && (menuName == null || menuName!!.isEmpty())) {
+            orderStatusViewModel.getMenuName(userLocationState.value!!.latitude, userLocationState.value!!.longitude)
         }
     }
 
@@ -94,6 +98,19 @@ fun DeliveryStatusScreen() {
             zoom(15.5)
         }
     }
+
+    // Funzione per formattare il timestamp in ora locale
+    fun formatTimestampToLocalTime(timestamp: String?): String {
+        return try {
+            val utcDateTime = ZonedDateTime.parse(timestamp) // Converte il timestamp UTC
+            val localDateTime = utcDateTime.withZoneSameInstant(ZoneId.systemDefault()) // Converte al fuso orario locale
+            val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()) // Formattazione in HH:mm
+            localDateTime.format(formatter)
+        } catch (e: Exception) {
+            "Orario non disponibile"
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -120,6 +137,22 @@ fun DeliveryStatusScreen() {
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
+
+        orderStatus?.let {
+            if (orderStatus?.expectedDeliveryTimestamp != null) {
+                Text(
+                    text = "Consegna prevista: ${formatTimestampToLocalTime(orderStatus?.expectedDeliveryTimestamp)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Text(
+                    text = "Consegna effettuata alle: ${formatTimestampToLocalTime(orderStatus?.deliveryTimestamp)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
 
         // Card che contiene la mappa
         Card(
@@ -185,17 +218,32 @@ fun DeliveryStatusScreen() {
                     }
                 }
 
-                // Marker per la posizione dell'utente (piccolo, con iconSize aumentata a 0.8)
+                // Marker per la posizione dell'utente 
                 val markerUser = rememberIconImage(
                     key = "user-marker",
                     painter = painterResource(R.drawable.marker)
                 )
+
+                val shopPosition = rememberIconImage(
+                    key = "shop-marker",
+                    painter = painterResource(R.drawable.shop)
+                )
+
+                startingLocation?.let{ shopPos ->
+                    PointAnnotation(
+                        point = Point.fromLngLat(shopPos.lng, shopPos.lat)
+                    ) {
+                        iconImage = shopPosition
+                        iconSize = 0.1
+                    }
+                }
+
                 userLocationState.value?.let { loc ->
                     PointAnnotation(
                         point = Point.fromLngLat(loc.longitude, loc.latitude)
                     ) {
                         iconImage = markerUser
-                        iconSize = 0.8
+                        iconSize = 0.3
                     }
                 }
 
@@ -213,7 +261,7 @@ fun DeliveryStatusScreen() {
                         )
                     ) {
                         iconImage = markerOrder
-                        iconSize = 0.8
+                        iconSize = 0.3
                     }
                 } else {
                     orderStatus?.currentPosition?.let { currentPos ->
@@ -221,7 +269,7 @@ fun DeliveryStatusScreen() {
                             point = Point.fromLngLat(currentPos.lng, currentPos.lat)
                         ) {
                             iconImage = markerOrder
-                            iconSize = 0.8
+                            iconSize = 0.3
                         }
                     }
                 }

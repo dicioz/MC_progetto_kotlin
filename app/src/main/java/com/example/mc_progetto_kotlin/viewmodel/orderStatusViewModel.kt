@@ -39,6 +39,9 @@ class OrderStatusViewModel: ViewModel() {
     private val _menuName = MutableStateFlow<String?>(null)
     val menuName = _menuName.asStateFlow()
 
+    private val _menuStartingLocation = MutableStateFlow<Location?>(null)
+    val menuStartingLocation = _menuStartingLocation.asStateFlow()
+
     private var mid: Int? = null
     var sid: String = ""
 
@@ -92,6 +95,8 @@ class OrderStatusViewModel: ViewModel() {
                     val menu = response.body<MenuItem>()
                     Log.d("OrderStatusViewModel", "Menu name caricato con successo: ${menu.name}")
                     _menuName.value = menu.name
+                    _menuStartingLocation.value = menu.location
+                    DataStoreManager.saveMenuName(menu.name)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -1,66 +1,67 @@
 package com.example.mc_progetto_kotlin.model
 
 import android.app.Application
-import androidx.room.Dao
-import androidx.room.Database
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.room.Query
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import android.util.Log
-import androidx.room.PrimaryKey
+import androidx.compose.ui.platform.LocalContext
+import androidx.room.*
+import com.example.mc_progetto_kotlin.view.MenuListScreen
 
-
-@Entity
-data class User(
-    @PrimaryKey val sid: String
+// Definizione dell’entità per salvare le immagini dei menu
+@Entity(tableName = "menu_images")
+data class MenuImageEntity(
+    @PrimaryKey val menuId: Int,
+    val base64: String,
+    val imageVersion: Int
 )
 
-@Database(entities = [User::class], version = 1)
-abstract class AppDatabase : RoomDatabase() {
-    abstract fun userDao(): UserDao
-}
-
-// Usa un Application Context per creare il database
-class MyApplication : Application() {
-    val db = Room.databaseBuilder(
-        applicationContext,
-        AppDatabase::class.java, "dbtestUsers"
-    ).build()
-
-}
-
+// DAO per le operazioni sul database
 @Dao
-interface UserDao {
-    // per inserire un utente, in questo caso di tipo User perche il database contiene solo entità di tipo user
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: User)
+interface MenuImageDao {
 
-    @Query("SELECT * FROM user")
-    suspend fun getAllUsers(): List<User>
+    // Inserisce o aggiorna l’immagine (in caso di conflitto sostituisce il record)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMenuImage(menuImage: MenuImageEntity)
+
+    // Recupera l’immagine (con tutte le informazioni) per un determinato menuId
+    @Query("SELECT * FROM menu_images WHERE menuId = :menuId LIMIT 1")
+    suspend fun getMenuImage(menuId: Int): MenuImageEntity?
+
+    // Recupera solo la versione dell’immagine per un determinato menuId
+    @Query("SELECT imageVersion FROM menu_images WHERE menuId = :menuId LIMIT 1")
+    suspend fun getImageVersion(menuId: Int): Int?
+
+    // Funzione di transazione che inserisce o aggiorna in base alla versione
+    @Transaction
+    suspend fun insertOrUpdateMenuImage(newImage: MenuImageEntity) {
+        val existingImage = getMenuImage(newImage.menuId)
+        // Se non esiste o la nuova versione è maggiore, inserisce/aggiorna
+        if (existingImage == null || newImage.imageVersion > existingImage.imageVersion) {
+            insertMenuImage(newImage)
+        }
+    }
+
+    // (Opzionale) Recupera tutte le immagini per debug o altre operazioni
+    @Query("SELECT * FROM menu_images")
+    fun getAllImages(): kotlinx.coroutines.flow.Flow<List<MenuImageEntity>>
 }
 
-//fun checkUser() {
-//    // controlla se l'utente è già presente nel database, altrimenti lo crea e lo salva
-//    val userDao = MyApplication().db.userDao()
-//    CoroutineScope(Dispatchers.Main).launch {
-//        val checkSid = userDao.getAllUsers()
-//        if (checkSid.isEmpty()) {
-//            CommunicationController.createUser()
-//            userDao.insertUser(User(CommunicationController.sid))
-//        } else {
-//            Log.d("User", CommunicationController.sid.toString())
-//        }
-//    }
-//        val user = User(CommunicationController.sid)
-//        CoroutineScope(Dispatchers.Main).launch {
-//            userDao.insertUser(user)
-//        }
-//}
+@Database(entities = [MenuImageEntity::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun menuImageDao(): MenuImageDao
+}
+
+class MyApplication : Application() {
+    companion object {
+        lateinit var database: AppDatabase
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Inizializza direttamente il database
+        database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java, "menu_images"
+        ).build()
+    }
+}
 
 

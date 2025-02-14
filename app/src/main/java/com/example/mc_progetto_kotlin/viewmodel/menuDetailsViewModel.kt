@@ -21,6 +21,7 @@ import com.example.mc_progetto_kotlin.viewmodel.MenuItem
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.example.mc_progetto_kotlin.viewmodel.MenuListViewModel
 
 class MenuDetailsViewModel : ViewModel() {
     private val _menu: MutableLiveData<MenuItem> = MutableLiveData()
